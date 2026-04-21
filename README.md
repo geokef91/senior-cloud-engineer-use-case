@@ -211,3 +211,36 @@ The media container holds uploaded files. Without versioning, an accidental over
 
 ### 5. All variables in `variables.tf`
 The `cicd_principal_id` variable was originally defined in `rbac.tf` alongside the resource that uses it. Terraform allows this, but it breaks the convention that all input surface lives in one file. Moving it to `variables.tf` means anyone onboarding to the codebase finds the complete list of inputs in one place.
+
+### 6. `ignore_changes` on the container image
+```hcl
+lifecycle {
+  ignore_changes = [template[0].container[0].image]
+}
+```
+The container image is updated by the **app deployment pipeline**, not by this Terraform stack. Without `ignore_changes`, every `terraform plan` after an app release shows a diff trying to revert the image back to whatever is in tfvars. This creates a persistent drift fight between the two pipelines and risks rolling back a live release. Ignoring the image lets Terraform own the infrastructure and the app pipeline own the image tag — clean separation of concerns.
+
+### 7. `depends_on` from Container App to RBAC assignments
+```hcl
+depends_on = [
+  azurerm_role_assignment.app_storage_blob_contributor,
+  azurerm_role_assignment.app_keyvault_secrets_user,
+]
+```
+Azure RBAC propagation is eventually consistent and can take up to 2 minutes after a role assignment is created. Without this dependency, Terraform may start the Container App before the Managed Identity has permissions on Storage and Key Vault, causing 403 errors on first boot. `depends_on` makes Terraform wait for the assignments to exist before the app resource is created.
+
+### 8. `CanNotDelete` management lock on prod resource group
+```hcl
+resource "azurerm_management_lock" "rg" {
+  count      = var.environment == "prod" ? 1 : 0
+  lock_level = "CanNotDelete"
+}
+```
+A `CanNotDelete` lock on the resource group means `terraform destroy`, a portal click, or a runaway script cannot remove the production stack without first explicitly removing the lock. Applied to prod only (`count = var.environment == "prod" ? 1 : 0`) so dev remains easy to tear down.
+
+### 9. Health probes tied to `revision_mode = "Multiple"`
+```hcl
+liveness_probe  { transport = "HTTP", path = "/health", port = 8000 }
+readiness_probe { transport = "HTTP", path = "/health", port = 8000 }
+```
+`revision_mode = "Multiple"` keeps the old revision alive until the new one is ready — but "ready" is only meaningful if the platform can actually verify health. Without probes, Container Apps uses a simple timer, which means a bad deploy could start receiving traffic before the app finishes initialising or before it has loaded secrets from Key Vault. The readiness probe blocks traffic; the liveness probe triggers a restart if the app locks up.

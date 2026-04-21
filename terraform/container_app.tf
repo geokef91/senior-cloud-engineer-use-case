@@ -34,6 +34,19 @@ resource "azurerm_container_app" "api" {
   revision_mode                = "Multiple" # Enables blue-green; traffic_weight controls rollout
   tags                         = local.tags
 
+  # Wait for RBAC assignments to propagate before the app starts.
+  # Azure RBAC can take up to 2 minutes; without this the first boot gets 403.
+  depends_on = [
+    azurerm_role_assignment.app_storage_blob_contributor,
+    azurerm_role_assignment.app_keyvault_secrets_user,
+  ]
+
+  # The container image is managed by the app deployment pipeline, not Terraform.
+  # Ignoring it prevents Terraform from reverting the image on the next infra run.
+  lifecycle {
+    ignore_changes = [template[0].container[0].image]
+  }
+
   # Attach the user-assigned managed identity so the app can authenticate
   # to Storage and Key Vault without credentials
   identity {
@@ -76,6 +89,29 @@ resource "azurerm_container_app" "api" {
       env {
         name  = "KEY_VAULT_URI"
         value = azurerm_key_vault.main.vault_uri
+      }
+
+      # Health probes — required for revision_mode = "Multiple" to work correctly.
+      # The platform uses these to decide when a new revision is ready for traffic.
+      # Path must match the FastAPI health endpoint (add GET /health → {"status":"ok"}).
+      liveness_probe {
+        transport = "HTTP"
+        path      = "/health"
+        port      = 8000
+
+        initial_delay           = 10
+        interval_seconds        = 30
+        failure_count_threshold = 3
+      }
+
+      readiness_probe {
+        transport = "HTTP"
+        path      = "/health"
+        port      = 8000
+
+        initial_delay           = 5
+        interval_seconds        = 10
+        failure_count_threshold = 3
       }
     }
   }

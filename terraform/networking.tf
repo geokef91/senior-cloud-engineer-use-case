@@ -8,6 +8,18 @@ resource "azurerm_resource_group" "main" {
 }
 
 # ---------------------------------------------------------------------------
+# Resource Group deletion lock (prod only)
+# Prevents accidental terraform destroy or portal deletion in production.
+# ---------------------------------------------------------------------------
+resource "azurerm_management_lock" "rg" {
+  count      = var.environment == "prod" ? 1 : 0
+  name       = "lock-rg-${local.name_suffix}"
+  scope      = azurerm_resource_group.main.id
+  lock_level = "CanNotDelete"
+  notes      = "Protect production resources from accidental deletion"
+}
+
+# ---------------------------------------------------------------------------
 # Virtual Network
 # The VNet name is fixed per the assignment spec.
 # ---------------------------------------------------------------------------
