@@ -22,7 +22,7 @@ resource "azurerm_key_vault" "main" {
 
   network_acls {
     default_action = "Deny"
-    bypass         = ["AzureServices"]
+    bypass         = "AzureServices"
   }
 
   tags = local.tags

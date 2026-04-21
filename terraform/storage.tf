@@ -14,7 +14,7 @@ resource "azurerm_storage_account" "main" {
   allow_nested_items_to_be_public = false
 
   # Enforce HTTPS and minimum TLS version
-  enable_https_traffic_only = true
+  https_traffic_only_enabled = true
   min_tls_version           = "TLS1_2"
 
   # Disable shared key access — force Azure AD / managed identity auth only
