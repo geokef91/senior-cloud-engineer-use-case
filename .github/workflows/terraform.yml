@@ -6,11 +6,13 @@ on:
       - main
     paths:
       - "terraform/**"
+      - ".github/workflows/**"
   pull_request:
     branches:
       - main
     paths:
       - "terraform/**"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
