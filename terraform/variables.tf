@@ -94,6 +94,10 @@ variable "storage_replication_type" {
   description = "Storage account replication type"
   type        = string
   default     = "LRS"
+  validation {
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.storage_replication_type)
+    error_message = "storage_replication_type must be one of: LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS."
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -103,6 +107,10 @@ variable "key_vault_sku" {
   description = "Key Vault SKU (standard | premium)"
   type        = string
   default     = "standard"
+  validation {
+    condition     = contains(["standard", "premium"], var.key_vault_sku)
+    error_message = "key_vault_sku must be 'standard' or 'premium'."
+  }
 }
 
 # ---------------------------------------------------------------------------

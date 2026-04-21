@@ -120,7 +120,7 @@ resource "azurerm_network_security_group" "container_apps" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "*"
+    source_address_prefix      = var.subnet_container_apps_cidr
     destination_address_prefix = "AzureCloud"
   }
 }
