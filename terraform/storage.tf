@@ -15,7 +15,7 @@ resource "azurerm_storage_account" "main" {
 
   # Enforce HTTPS and minimum TLS version
   https_traffic_only_enabled = true
-  min_tls_version           = "TLS1_2"
+  min_tls_version            = "TLS1_2"
 
   # Disable shared key access — force Azure AD / managed identity auth only
   shared_access_key_enabled = false
