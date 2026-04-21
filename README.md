@@ -166,3 +166,17 @@ az containerapp revision activate --name ca-api-usecase-prod \
 ```
 
 To enable blue/green or canary, switch to `revision_mode = "Multiple"` and control traffic weights via `traffic_weight` blocks.
+
+## Observability
+
+A **Log Analytics Workspace** is provisioned and wired to the Container Apps Environment. Container stdout/stderr and platform metrics (replica count, CPU, memory, request latency) flow there automatically.
+
+For a production setup the following would be added on top:
+
+- **Key Vault diagnostic settings** — audit logs (who accessed/modified which secret) sent to Log Analytics. Commented out in `keyvault.tf`, ready to enable.
+- **Storage Account metrics** — transaction errors and availability routed to Log Analytics.
+- **Azure Monitor alert rules** — suggested baselines:
+  - HTTP 5xx rate > threshold → PagerDuty / email
+  - Replica count at `app_max_replicas` for > 5 min → scale ceiling hit, investigate
+  - Key Vault `ServiceApiResult` failures → potential auth issue
+- **Container App revision health** — Container Apps exposes `/healthz` style probes; configuring `liveness_probe` and `readiness_probe` in the container spec ensures traffic only reaches healthy revisions.
