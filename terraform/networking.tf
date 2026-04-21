@@ -55,11 +55,11 @@ resource "azurerm_subnet" "container_apps" {
 
 # Private Endpoints — no delegation, no private endpoint network policies
 resource "azurerm_subnet" "private_endpoints" {
-  name                                          = "snet-pe-${local.name_suffix}"
-  resource_group_name                           = azurerm_resource_group.main.name
-  virtual_network_name                          = azurerm_virtual_network.main.name
-  address_prefixes                              = [var.subnet_private_endpoints_cidr]
-  private_endpoint_network_policies             = "Disabled"
+  name                              = "snet-pe-${local.name_suffix}"
+  resource_group_name               = azurerm_resource_group.main.name
+  virtual_network_name              = azurerm_virtual_network.main.name
+  address_prefixes                  = [var.subnet_private_endpoints_cidr]
+  private_endpoint_network_policies = "Disabled"
 }
 
 # ---------------------------------------------------------------------------
@@ -187,11 +187,11 @@ resource "azurerm_subnet_network_security_group_association" "private_endpoints"
 # The return peering (Hub → Spoke) must be created in the hub subscription.
 # ---------------------------------------------------------------------------
 resource "azurerm_virtual_network_peering" "spoke_to_hub" {
-  name                         = "peer-spoke-to-hub"
-  resource_group_name          = azurerm_resource_group.main.name
-  virtual_network_name         = azurerm_virtual_network.main.name
-  remote_virtual_network_id    = var.hub_vnet_id
-  allow_forwarded_traffic      = true
-  allow_gateway_transit        = false
-  use_remote_gateways          = true # Use hub VPN gateway for on-prem connectivity
+  name                      = "peer-spoke-to-hub"
+  resource_group_name       = azurerm_resource_group.main.name
+  virtual_network_name      = azurerm_virtual_network.main.name
+  remote_virtual_network_id = var.hub_vnet_id
+  allow_forwarded_traffic   = true
+  allow_gateway_transit     = false
+  use_remote_gateways       = true # Use hub VPN gateway for on-prem connectivity
 }

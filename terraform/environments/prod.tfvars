@@ -17,7 +17,7 @@ subnet_private_endpoints_cidr = "10.0.0.32/27"
 # Container App — higher resources for production
 container_cpu    = 0.5
 container_memory = "1Gi"
-app_min_replicas = 1  # Always-on in prod
+app_min_replicas = 1 # Always-on in prod
 app_max_replicas = 5
 
 # Storage
