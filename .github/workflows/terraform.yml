@@ -41,6 +41,8 @@ env:
 jobs:
   # ---------------------------------------------------------------------------
   # Validate — runs on every push and PR
+  # Static checks (fmt + validate) run without Azure credentials so they
+  # always produce a result even in forks or PRs without access to secrets.
   # ---------------------------------------------------------------------------
   validate:
     name: Validate
@@ -61,20 +63,9 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${{ secrets.TF_STATE_RESOURCE_GROUP }}" \
-            -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=tfstate" \
-            -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate"
+      # -backend=false skips remote state — no Azure login needed for syntax validation
+      - name: Terraform Init (no backend)
+        run: terraform init -backend=false
 
       - name: Terraform Validate
         run: terraform validate
