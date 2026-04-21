@@ -131,3 +131,38 @@ terraform apply -var-file="environments/dev.tfvars" \
   -var="hub_vnet_id=<hub_vnet_resource_id>" \
   -var="container_image=<registry>/<image>:<tag>"
 ```
+
+## Application Deployment (out of scope, but how it would work)
+
+This repository covers infrastructure provisioning only. Application deployment would live in a **separate pipeline**, keeping infra and app lifecycles decoupled — infra changes are infrequent and carry higher risk; app deploys happen on every release.
+
+### Pipeline structure
+
+```
+Pull Request
+  └── docker build
+  └── push to ACR  (dev tag, e.g. myacr.azurecr.io/fastapi-app:pr-42)
+
+Merge to main
+  └── docker build
+  └── push to ACR  (versioned tag, e.g. myacr.azurecr.io/fastapi-app:1.4.2)
+  └── az containerapp update --image <new-tag>   # zero-downtime revision swap
+```
+
+### Prerequisites
+
+- Azure Container Registry (ACR) — provisioned in the hub or alongside this infrastructure
+- The Container App's Managed Identity needs `AcrPull` on the ACR to pull images without credentials
+- `TF_VAR_CONTAINER_IMAGE` secret updated to the new image tag on each release (or overridden directly in the deploy step)
+
+### Zero-downtime deploys
+
+Container Apps uses a **revision model** — a new revision is created for each image update. With `revision_mode = "Single"` (as configured here), traffic shifts to the new revision automatically once it passes health checks. Rolling back is a single command:
+
+```bash
+az containerapp revision activate --name ca-api-usecase-prod \
+  --resource-group rg-usecase-prod \
+  --revision <previous-revision-name>
+```
+
+To enable blue/green or canary, switch to `revision_mode = "Multiple"` and control traffic weights via `traffic_weight` blocks.
