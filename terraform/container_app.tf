@@ -6,7 +6,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = "PerGB2018"
-  retention_in_days   = 30
+  retention_in_days   = var.environment == "prod" ? 90 : 30 # 90d for prod audit requirements
   tags                = local.tags
 }
 
@@ -31,7 +31,7 @@ resource "azurerm_container_app" "api" {
   name                         = "ca-api-${local.name_suffix}"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.main.name
-  revision_mode                = "Single"
+  revision_mode                = "Multiple" # Enables blue-green; traffic_weight controls rollout
   tags                         = local.tags
 
   # Attach the user-assigned managed identity so the app can authenticate

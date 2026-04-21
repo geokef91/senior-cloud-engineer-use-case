@@ -114,6 +114,15 @@ variable "key_vault_sku" {
 }
 
 # ---------------------------------------------------------------------------
+# CI/CD
+# ---------------------------------------------------------------------------
+variable "cicd_principal_id" {
+  description = "Object ID of the CI/CD service principal that manages Key Vault secrets. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+# ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
 variable "tags" {

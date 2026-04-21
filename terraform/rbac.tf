@@ -36,12 +36,6 @@ resource "azurerm_role_assignment" "app_keyvault_secrets_user" {
 # Allows the pipeline to write secrets (e.g., connection strings) to Key Vault.
 # The principal_id is passed as a variable so no credentials are hardcoded.
 # ---------------------------------------------------------------------------
-variable "cicd_principal_id" {
-  description = "Object ID of the CI/CD service principal that manages Key Vault secrets"
-  type        = string
-  default     = ""
-}
-
 resource "azurerm_role_assignment" "cicd_keyvault_officer" {
   count                = var.cicd_principal_id != "" ? 1 : 0
   scope                = azurerm_key_vault.main.id

@@ -25,6 +25,15 @@ resource "azurerm_storage_account" "main" {
     bypass         = ["AzureServices"]
   }
 
+  # Blob-level soft delete and versioning — media files are recoverable if
+  # accidentally overwritten or deleted
+  blob_properties {
+    versioning_enabled = true
+    delete_retention_policy {
+      days = 7
+    }
+  }
+
   tags = local.tags
 }
 

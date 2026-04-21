@@ -17,7 +17,7 @@ resource "azurerm_key_vault" "main" {
   # Use Azure RBAC for data-plane authorization (modern approach over access policies)
   enable_rbac_authorization = true
 
-  soft_delete_retention_days = 7
+  soft_delete_retention_days = var.environment == "prod" ? 90 : 7 # Min 7d; 90d for prod compliance
   purge_protection_enabled   = true
 
   network_acls {

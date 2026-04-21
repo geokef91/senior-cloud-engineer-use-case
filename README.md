@@ -157,7 +157,7 @@ Merge to main
 
 ### Zero-downtime deploys
 
-Container Apps uses a **revision model** — a new revision is created for each image update. With `revision_mode = "Single"` (as configured here), traffic shifts to the new revision automatically once it passes health checks. Rolling back is a single command:
+Container Apps uses a **revision model** — a new revision is created for each image update. With `revision_mode = "Multiple"` (as configured), multiple revisions coexist and the `traffic_weight` block controls the split. A new deploy creates a new revision alongside the old one; traffic only shifts when the new revision is healthy. Rolling back is a single command:
 
 ```bash
 az containerapp revision activate --name ca-api-usecase-prod \
@@ -165,7 +165,7 @@ az containerapp revision activate --name ca-api-usecase-prod \
   --revision <previous-revision-name>
 ```
 
-To enable blue/green or canary, switch to `revision_mode = "Multiple"` and control traffic weights via `traffic_weight` blocks.
+The default `traffic_weight { latest_revision = true, percentage = 100 }` sends all traffic to the latest revision. Canary or blue/green can be introduced by splitting that percentage without any infrastructure change.
 
 ## Observability
 
@@ -180,3 +180,34 @@ For a production setup the following would be added on top:
   - Replica count at `app_max_replicas` for > 5 min → scale ceiling hit, investigate
   - Key Vault `ServiceApiResult` failures → potential auth issue
 - **Container App revision health** — Container Apps exposes `/healthz` style probes; configuring `liveness_probe` and `readiness_probe` in the container spec ensures traffic only reaches healthy revisions.
+
+## Key Design Decisions
+
+These are deliberate choices worth explaining during a review or interview.
+
+### 1. `revision_mode = "Multiple"` on the Container App
+Single mode is simpler but causes a brief traffic gap during deploys — the old revision is killed before the new one is ready. Multiple mode keeps both revisions alive simultaneously and only shifts traffic once the new revision passes health checks. This gives true zero-downtime deploys and a fast rollback path (reactivate the old revision) at no extra cost.
+
+### 2. Environment-aware soft delete retention (Key Vault)
+```hcl
+soft_delete_retention_days = var.environment == "prod" ? 90 : 7
+```
+The minimum is 7 days, sufficient for dev. For prod, 90 days is the recommended baseline for compliance and gives a wide recovery window if a secret is accidentally purged. Dev keeps 7 to allow faster cleanup cycles.
+
+### 3. Environment-aware Log Analytics retention
+```hcl
+retention_in_days = var.environment == "prod" ? 90 : 30
+```
+30 days is enough for dev debugging. Prod retention is raised to 90 days to satisfy common audit and incident investigation requirements. Log Analytics charges per GB ingested — keeping dev at 30 days avoids unnecessary cost.
+
+### 4. Blob versioning + soft delete on Storage Account
+```hcl
+blob_properties {
+  versioning_enabled = true
+  delete_retention_policy { days = 7 }
+}
+```
+The media container holds uploaded files. Without versioning, an accidental overwrite is permanent. With versioning enabled, every write creates a new version and the previous version is retained for 7 days. This matches the same recovery posture as the Terraform state backend.
+
+### 5. All variables in `variables.tf`
+The `cicd_principal_id` variable was originally defined in `rbac.tf` alongside the resource that uses it. Terraform allows this, but it breaks the convention that all input surface lives in one file. Moving it to `variables.tf` means anyone onboarding to the codebase finds the complete list of inputs in one place.
