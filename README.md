@@ -112,6 +112,8 @@ Feature branch ──▶ Pull Request ──▶ terraform validate + plan (poste
                                         (with GitHub Environment approval gate for prod)
 ```
 
+> **Note on CI status:** The `Validate` job passes clean. The `Apply` job fails at Azure Login because this demo repository has no Azure credentials configured — the pipeline code is correct and would succeed with the secrets listed below wired up.
+
 ## Local Usage
 
 ```bash
