@@ -1,6 +1,7 @@
 # Senior Cloud Engineer — Use Case
 
-![Terraform Validate](https://github.com/geokef91/senior-cloud-engineer-use-case/actions/workflows/terraform.yml/badge.svg)
+![Validate](https://github.com/geokef91/senior-cloud-engineer-use-case/actions/workflows/validate.yml/badge.svg)
+![Deploy](https://github.com/geokef91/senior-cloud-engineer-use-case/actions/workflows/terraform.yml/badge.svg)
 
 Private Azure deployment of a FastAPI application using Terraform and GitHub Actions.
 
